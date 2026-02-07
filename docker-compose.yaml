@@ -1,0 +1,37 @@
+services:
+  oracle:
+    image: gvenzl/oracle-free:23.5-slim-faststart
+    container_name: oracle-db
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PASSWORD=Welcome-12345
+      - APP_USER=app_user
+      - APP_USER_PASSWORD=Welcome-12345
+    volumes:
+      - oracle_data_v2:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"] 
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  app:
+    build: .
+    container_name: loan-api
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - DB_USER=app_user
+      - DB_PASSWORD=Welcome-12345
+      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@//oracle:1521/FREEPDB1
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8081
+
+    depends_on:
+      oracle:
+        condition: service_healthy
+
+volumes:
+    oracle_data_v2:

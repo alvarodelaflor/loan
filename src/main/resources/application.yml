@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: loan-api
+  datasource:
+    url: 'jdbc:oracle:thin:@//localhost:1521/FREEPDB1'
+    username: '${DB_USER:app_user}'
+    password: '${DB_PASSWORD:Welcome-12345}'
+  jpa:
+    hibernate:
+      ddl-auto: update
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  springdoc:
+    swagger-ui:
+      path=/openapi-spec:
+        yaml:
