@@ -2,6 +2,13 @@
 
 A REST API to manage the end-to-end lifecycle of personal loan applications (creation, retrieval, status transitions, searching and auditing). The project follows **Hexagonal Architecture (Ports & Adapters / Clean Architecture)** on **Spring Boot 3 / Java 21**, using **Oracle** as the database and **Hibernate Envers** for full auditability.
 
+The API is also deployed on a personal server and can be accessed at:
+- **Base URL (prod)**: `http://ssh.alvarodelaflor.com:8080`
+
+When using Postman:
+- Use **environment `CAIXABANKTECH-PROD`** (in `docs/postman/`) against the deployed server.
+- Use **environment `CAIXABANKTECH-LOCAL`** for running the API locally (Docker or direct Spring Boot).
+
 ## Demo
 
 ![Demo](docs/media/demo.gif)
@@ -9,8 +16,12 @@ A REST API to manage the end-to-end lifecycle of personal loan applications (cre
 ## Quick start
 - **100% test coverage achieved**
 - Start everything (Oracle + API): `docker compose up --build`
-- Swagger UI: http://localhost:8080/swagger-ui.html
+- Swagger UI (local): http://localhost:8080/swagger-ui/index.html#/
+- Swagger UI (prod): http://ssh.alvarodelaflor.com:8080/swagger-ui/index.html#/
 - Postman collection to run the full flow end-to-end: `docs/postman/CAIXABANKTECH.postman_collection.json`
+
+![Swagger](docs/media/swagger.jpeg)
+> **Disclaimer**: depending on the browser and security settings, requests to non-HTTPS URLs (like `http://localhost:8080` or `http://ssh.alvarodelaflor.com:8080`) may be blocked for embedded content such as Swagger UI. If Swagger does not load correctly, try using a different browser, adjusting mixed-content settings, or accessing the API directly via Postman/cURL.
 
 ---
 
@@ -26,10 +37,10 @@ A REST API to manage the end-to-end lifecycle of personal loan applications (cre
 Start Oracle (container) and the API:
 
 - Normal start:
-  - `docker-compose -f docker-compose.yaml up --build`
+  - `docker compose -f docker-compose.yaml up --build`
 
 - Clean start (removes previous DB volume/state):
-  - `docker-compose -f docker-compose.yaml down -v --remove-orphans && docker compose -f docker-compose.yaml up --build`
+  - `docker compose -f docker-compose.yaml down -v --remove-orphans && docker compose -f docker-compose.yaml up --build`
 
 Notes:
 - First boot can take ~1–2 minutes while Oracle initializes and Flyway runs migrations.
@@ -52,7 +63,7 @@ To run the same API on a Raspberry Pi (or any low-resource environment) without 
 How to start on a Raspberry Pi (or any host with Docker):
 
 - Normal start:
-  - `docker-compose -f docker-compose-raspberry.yaml up --build`
+  - `docker compose -f docker-compose-raspberry.yaml up --build`
 
 Notes:
 - No external database container is started: H2 runs embedded inside the API container.
@@ -66,9 +77,11 @@ Notes:
 
 ## 2) API access & documentation
 
-- **Base URL**: `http://localhost:8080/api/v1/loans`
-- **Swagger UI**: http://localhost:8080/swagger-ui.html
-- **OpenAPI UI**: http://localhost:8080/swagger-ui/index.html
+- **Base URL (local)**: `http://localhost:8080/api/v1/loans`
+- **Base URL (prod)**: `http://ssh.alvarodelaflor.com:8080/api/v1/loans`
+- **Swagger UI (local)**: http://localhost:8080/swagger-ui.html
+- **Swagger UI (prod)**: http://ssh.alvarodelaflor.com:8080/swagger-ui.html
+- **OpenAPI UI (local)**: http://localhost:8080/swagger-ui/index.html
 
 ### Main endpoints
 - `POST /api/v1/loans` — create a loan application (initial status `PENDING`)
@@ -89,6 +102,7 @@ Errors:
 Under `docs/postman/` you have:
 - **Collection**: `CAIXABANKTECH.postman_collection.json`
 - **Local environment**: `CAIXABANKTECH-LOCAL.postman_environment.json`
+- **Prod environment**: `CAIXABANKTECH-PROD.postman_environment.json`
 
 The collection is designed to run the full workflow:
 1. **POST Create Loan**
@@ -106,10 +120,10 @@ The first request (**Create Loan**) includes a test script that automatically st
 
 ### How to use
 1. Import the **collection** and the **environment** in Postman.
-2. Select the environment `CAIXABANKTECH-LOCAL`.
-3. Ensure `caixabanktech-url` includes the scheme, e.g.:
-   - `http://localhost:8080`
-   (If you set it to `localhost:8080` without `http://`, Postman can fail to build the URL depending on settings.)
+2. Select:
+   - `CAIXABANKTECH-LOCAL` to hit `http://localhost:8080`.
+   - `CAIXABANKTECH-PROD` to hit `http://ssh.alvarodelaflor.com:8080`.
+3. Ensure the `caixabanktech-url` variable matches the chosen environment (including scheme, e.g. `http://ssh.alvarodelaflor.com:8080`).
 4. Run the collection using the Postman **Runner** to execute all requests in order.
 
 ---
