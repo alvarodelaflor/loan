@@ -130,30 +130,107 @@ The first request (**Create Loan**) includes a test script that automatically st
 
 ## 4) Architecture & technical decisions
 
-### Hexagonal Architecture
-- **Domain**: `LoanApplication` aggregate + Value Objects (e.g., `ApplicantIdentity`, `LoanAmount`) enforcing invariants and valid state transitions.
-- **Application**: use cases (inbound ports) such as `CreateLoanUseCase`, `RetrieveLoanUseCase`, `ModifyLoanStatusUseCase`.
-- **Infrastructure**: REST adapter (Spring MVC) and persistence adapter (Spring Data JPA + Oracle).
+This project is designed following **Hexagonal Architecture (Ports & Adapters / Clean Architecture)** to keep domain logic independent from frameworks, databases, and delivery mechanisms.
 
-### Key decisions
-- **Oracle container** to be closer to a real banking-like environment.
-- **Hibernate Envers** for a complete chronological audit trail.
-- **Flyway** for schema versioning.
-- **MapStruct** for efficient, compile-time DTO ↔ domain mapping.
+### Hexagonal Architecture
+- **Domain layer (`domain/`)**
+  - Contains the core business model:
+    - Aggregate root: `LoanApplication`.
+    - Value Objects: `ApplicantIdentity`, `LoanAmount`, `LoanId`, `LoanStatus`.
+  - Enforces invariants and valid state transitions at the model level (e.g. which transitions between loan statuses are allowed).
+  - Defines **ports** as Java interfaces under `domain/port/`:
+    - **Inbound ports** (`port.in`): describe use cases the application exposes (e.g. creating a loan, changing status, searching loans).
+    - **Outbound ports** (`port.out`): describe what the domain needs from the outside world (e.g. persistence operations for loans).
+  - Domain-specific exceptions live here as well (e.g. `InvalidStateTransitionException`, `ResourceNotFoundException`).
+
+- **Application layer (`application/`)**
+  - Implements use cases by orchestrating domain objects and outbound ports.
+  - Example: `LoanApplicationService` wires together validation, state transitions on `LoanApplication`, repository access through `LoanRepositoryPort`, and error handling.
+  - Contains business workflows ("what to do" to satisfy a request) but delegates core rules to the domain model.
+
+- **Infrastructure layer (`infrastructure/adapter/`)**
+  - Provides concrete adapters for the external world:
+    - **Input adapters** (e.g. REST controllers under `adapter/input/rest`): map HTTP requests to inbound ports and map domain objects back to DTOs.
+    - **Output adapters** (e.g. JPA repositories under `adapter/output/persistence/jpa`): implement outbound ports using Spring Data JPA and the chosen database.
+  - Uses **MapStruct** to map between DTOs, domain models, and JPA entities, avoiding manual mapping.
+  - This layer is where frameworks and technical details live (Spring MVC, JPA, Envers, Flyway, Docker, etc.), keeping the domain pure.
+
+### Key technical decisions
+- **Relational database with Oracle as primary target**
+  - Oracle is used to mimic a realistic banking environment.
+  - A dedicated Oracle container is defined in `docker-compose.yaml`.
+  - SQL schema is managed by Flyway using Oracle-specific migrations under `src/main/resources/db/migration/`.
+
+- **Auditability with Hibernate Envers**
+  - Every change to `LoanApplication` is versioned using Envers.
+  - A custom revision entity (`AuditRevisionEntity`) keeps audit metadata in a `REVINFO` table.
+  - The persistence adapter exposes a `findHistory` use case so clients can retrieve the full status history of a loan.
+
+- **Schema versioning with Flyway**
+  - Flyway runs automatically on startup in the Oracle profile, applying migrations incrementally.
+  - This guarantees reproducible schemas across environments and easy upgrades.
+
+- **DTO ↔ Domain ↔ JPA mapping with MapStruct**
+  - MapStruct is used as a compile-time code generator to map between API DTOs, domain models, and JPA entities.
+  - This avoids reflection-based mappers and keeps mapping logic explicit and type-safe.
+
+- **Multiple Spring profiles for different environments**
+  - `oracle` / `default`:
+    - Connects to the Oracle container.
+    - Enables Flyway migrations.
+    - Uses the Oracle Hibernate dialect.
+  - `h2-oracle`:
+    - Uses H2 in **Oracle compatibility mode** for lightweight environments (e.g. Raspberry Pi).
+    - Disables Flyway (migrations are tailored for Oracle).
+    - Still uses JPA/Hibernate so the rest of the stack behaves the same.
+
+- **Containerised runtime with Docker Compose**
+  - `docker-compose.yaml` runs Oracle + the API together.
+  - `docker-compose-raspberry.yaml` runs only the API with an embedded H2 database for lower-resource hosts.
+  - Both compose files expose the API on port `8080` and a debug port on `8081` for remote debugging.
 
 ---
 
 ## 5) Testing (100% coverage)
-- Unit tests on the domain (invariants/state transitions).
-- MVC/controller tests to validate HTTP contracts.
+- **Unit tests for the domain layer**
+  - Verify invariants, value object behaviour, and valid/invalid state transitions in `LoanApplication` and related types.
+- **Service/application tests**
+  - `LoanApplicationService` is covered with tests that exercise happy paths and error conditions (missing resources, invalid transitions, empty search results, etc.).
+- **MVC/controller tests**
+  - Validate HTTP contracts, status codes, validation errors, and RFC 7807 Problem Details responses.
+
+Test coverage is intentionally kept at **100%** to guard against regressions, especially around status transitions and business rules that are critical in a loan domain.
 
 ---
 
 ## 6) Possible improvements
-- Security: OAuth2/JWT (client vs manager roles).
-- Observability: Micrometer/Prometheus.
-- Caching: Redis.
-- Async processing/events: Kafka.
+
+These are directions the project could evolve while still fitting the existing hexagonal architecture.
+
+- **Security and authentication**
+  - Introduce Spring Security with OAuth2/JWT.
+  - Separate roles (e.g. customer vs back-office operator) and restrict which status transitions each role can invoke.
+  - Keep security concerns at the adapter level so the domain stays framework-agnostic.
+
+- **Observability**
+  - Add Micrometer + Prometheus to collect metrics for key use cases (requests per endpoint, loan creations per status, error rates, latency, etc.).
+  - Integrate with a dashboard (Grafana) to monitor system health and usage patterns over time.
+
+- **Caching**
+  - Use Redis or a similar cache for read-heavy operations (e.g. `getLoan`, `getLoansByIdentity`, search endpoints).
+  - Implement caching in the application or persistence adapter layer without leaking it into the domain.
+
+- **Asynchronous processing and events**
+  - Publish domain events (e.g. `LoanApproved`, `LoanRejected`, `LoanCancelled`) to a message broker like Kafka.
+  - Allow other systems (notifications, risk engines, reporting) to subscribe without coupling them directly to this API.
+
+- **Multi-database support**
+  - Extend the existing profiles to fully support another relational database (e.g. PostgreSQL) with its own migrations and dialect.
+  - Ensure mappings and schemas remain portable, so the same domain can run against different RDBMS backends.
+
+- **API hardening**
+  - Further enrich the OpenAPI/Swagger documentation with examples, detailed descriptions, and error schemas.
+  - Provide additional Postman environments (staging, QA) and CI/CD integration for automated tests and deployments.
 
 ---
 
