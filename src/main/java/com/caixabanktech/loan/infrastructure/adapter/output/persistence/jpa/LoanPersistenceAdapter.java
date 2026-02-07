@@ -51,14 +51,17 @@ public class LoanPersistenceAdapter implements LoanRepositoryPort {
     }
 
     @Override
-    public List<LoanApplication> findHistory(LoanId id) {
+    public Optional<List<LoanApplication>> findHistory(LoanId id) {
         List<LoanJpaEntity> revisions = AuditReaderFactory.get(entityManager).createQuery()
                 .forRevisionsOfEntity(LoanJpaEntity.class, true, true)
                 .add(AuditEntity.id().eq(id.value()))
                 .addOrder(AuditEntity.revisionNumber().asc())
                 .getResultList();
 
-        return revisions.stream().map(mapper::toDomain).collect(Collectors.toList());
+        return revisions.stream()
+                .filter(loan -> loan.getApplicantName() != null)
+                .map(mapper::toDomain)
+                .collect(Collectors.collectingAndThen(Collectors.toList(), Optional::of));
     }
 
     @Override

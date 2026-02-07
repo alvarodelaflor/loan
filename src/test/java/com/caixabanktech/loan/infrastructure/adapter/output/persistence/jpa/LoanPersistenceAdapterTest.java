@@ -141,12 +141,54 @@ class LoanPersistenceAdapterTest {
             when(mapper.toDomain(e1)).thenReturn(d1);
             when(mapper.toDomain(e2)).thenReturn(d2);
 
-            List<LoanApplication> result = adapter.findHistory(id);
+            List<LoanApplication> result = adapter.findHistory(id).get();
             assertEquals(2, result.size());
             assertTrue(result.containsAll(List.of(d1, d2)));
 
             verify(mapper).toDomain(e1);
             verify(mapper).toDomain(e2);
+        }
+    }
+
+    @Test
+    @DisplayName("findHistory should filter out revisions with null applicantName")
+    void findHistoryFiltersNullApplicantName() {
+        LoanJpaRepository jpaRepo = mock(LoanJpaRepository.class);
+        EntityManager em = mock(EntityManager.class);
+        LoanPersistenceMapper mapper = mock(LoanPersistenceMapper.class);
+        LoanPersistenceAdapter adapter = new LoanPersistenceAdapter(jpaRepo, em, mapper);
+
+        LoanId id = new LoanId(UUID.randomUUID());
+        LoanJpaEntity validEntity = sampleEntity(id.value(), "PENDING");
+        LoanJpaEntity nullNameEntity = sampleEntity(id.value(), "APPROVED");
+        nullNameEntity.setApplicantName(null);
+        LoanApplication mappedValid = sampleDomain(LoanStatus.PENDING);
+
+        AuditReader auditReader = mock(AuditReader.class);
+        AuditQueryCreator queryCreator = mock(AuditQueryCreator.class);
+        AuditQuery auditQuery = mock(AuditQuery.class);
+
+        try (MockedStatic<AuditReaderFactory> mocked = Mockito.mockStatic(AuditReaderFactory.class)) {
+            mocked.when(() -> AuditReaderFactory.get(em)).thenReturn(auditReader);
+            when(auditReader.createQuery()).thenReturn(queryCreator);
+            when(queryCreator.forRevisionsOfEntity(LoanJpaEntity.class, true, true)).thenReturn(auditQuery);
+            when(auditQuery.add(any())).thenReturn(auditQuery);
+            when(auditQuery.addOrder(any())).thenReturn(auditQuery);
+
+            when(auditQuery.getResultList()).thenReturn(List.of(validEntity, nullNameEntity));
+
+            when(mapper.toDomain(validEntity)).thenReturn(mappedValid);
+
+            Optional<List<LoanApplication>> resultOpt = adapter.findHistory(id);
+            assertTrue(resultOpt.isPresent());
+            List<LoanApplication> result = resultOpt.get();
+
+            assertEquals(1, result.size());
+            assertSame(mappedValid, result.get(0));
+
+            verify(mapper).toDomain(validEntity);
+
+            Mockito.verifyNoMoreInteractions(mapper);
         }
     }
 

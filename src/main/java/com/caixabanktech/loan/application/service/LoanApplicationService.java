@@ -64,7 +64,19 @@ public class LoanApplicationService implements CreateLoanUseCase, ModifyLoanStat
 
     @Override
     @Transactional(readOnly = true)
-    public List<LoanApplication> getLoanHistory(UUID id) { return loanRepository.findHistory(new LoanId(id)); }
+    public List<LoanApplication> getLoanHistory(UUID id) {
+        List<LoanApplication> results = loanRepository.findHistory(new LoanId(id))
+                .orElseThrow(() -> buildCriteriaMessage(id));
+        if (results.isEmpty()) {
+            throw buildCriteriaMessage(id);
+        }
+
+        return results;
+    }
+
+    private ResourceNotFoundException buildCriteriaMessage(UUID uuid) {
+        return new ResourceNotFoundException("No loans found for uuid: " + uuid.toString());
+    }
 
     private LoanApplication getLoanOrThrow(UUID uuid) {
         return loanRepository.findById(new LoanId(uuid))

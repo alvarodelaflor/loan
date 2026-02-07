@@ -12,7 +12,7 @@ public interface LoanRepositoryPort {
     LoanApplication save(LoanApplication loan);
     Optional<LoanApplication> findById(LoanId id);
     List<LoanApplication> findAll();
-    List<LoanApplication> findHistory(LoanId id);
+    Optional<List<LoanApplication>> findHistory(LoanId id);
     Optional<List<LoanApplication>> findByApplicantIdentity(ApplicantIdentity identity);
     Optional<List<LoanApplication>> findByCriteria(String identity, Instant startDate, Instant endDate);
     void deleteById(LoanId id);

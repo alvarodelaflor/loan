@@ -205,10 +205,21 @@ class LoanServiceTest {
                 createLoanApplication(LoanStatus.PENDING).id(id).build(),
                 createLoanApplication(LoanStatus.APPROVED).id(id).build()
         );
-        when(repositoryPort.findHistory(id)).thenReturn(history);
+        when(repositoryPort.findHistory(id)).thenReturn(Optional.of(history));
 
         List<LoanApplication> result = loanApplicationService.getLoanHistory(id.value());
         assertThat(result).hasSize(2).containsAll(history);
+    }
+
+    @Test
+    @DisplayName("getLoanHistory should throw when repository returns empty list")
+    void getLoanHistoryShouldThrowWhenEmptyListReturned() {
+        LoanId id = new LoanId(UUID.randomUUID());
+        when(repositoryPort.findHistory(id)).thenReturn(Optional.of(List.of()));
+
+        assertThatThrownBy(() -> loanApplicationService.getLoanHistory(id.value()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("No loans found for uuid");
     }
 
     @Test
