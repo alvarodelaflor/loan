@@ -145,7 +145,6 @@ The first request (**Create Loan**) includes a test script that automatically st
 
 ## 5) Testing (100% coverage)
 - Unit tests on the domain (invariants/state transitions).
-- Integration tests with **Testcontainers** (real Oracle) to validate SQL dialect compatibility.
 - MVC/controller tests to validate HTTP contracts.
 
 ---
