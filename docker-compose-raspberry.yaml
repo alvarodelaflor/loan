@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    container_name: loan-api-h2
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=h2-oracle
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8081
+
+volumes: {}

@@ -21,19 +21,46 @@ A REST API to manage the end-to-end lifecycle of personal loan applications (cre
 - **Java 21 + Maven 3.9+** (only if you want to run the app outside Docker)
 
 ### Docker (recommended)
+
+#### Oracle + API (main environment)
 Start Oracle (container) and the API:
 
 - Normal start:
-  - `docker-compose up --build`
+  - `docker-compose -f docker-compose.yaml up --build`
 
 - Clean start (removes previous DB volume/state):
-  - `docker-compose down -v --remove-orphans && docker-compose up --build`
+  - `docker-compose -f docker-compose.yaml down -v --remove-orphans && docker compose -f docker-compose.yaml up --build`
 
 Notes:
 - First boot can take ~1–2 minutes while Oracle initializes and Flyway runs migrations.
 - `docker-compose.yaml` exposes:
   - API on **8080**
   - Java debug port on **8081**
+
+#### Raspberry Pi / lightweight environment (H2 in Oracle compatibility mode)
+To run the same API on a Raspberry Pi (or any low-resource environment) without starting Oracle, a second compose file is provided that uses **H2 in Oracle compatibility mode** embedded in the application:
+
+- File: `docker-compose-raspberry.yaml`
+- Services:
+  - `app` (container `loan-api-h2`)
+    - Exposes:
+      - API on **8080**
+      - Debug port on **8081**
+    - Important env vars:
+      - `SPRING_PROFILES_ACTIVE=h2-oracle` → activates the profile defined in `application.yml` that configures H2 to behave like Oracle.
+
+How to start on a Raspberry Pi (or any host with Docker):
+
+- Normal start:
+  - `docker-compose -f docker-compose-raspberry.yaml up --build`
+
+Notes:
+- No external database container is started: H2 runs embedded inside the API container.
+- The `h2-oracle` profile in `application.yml` configures:
+  - H2 URL: `jdbc:h2:./data/loan-db;MODE=Oracle;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER=TRUE`
+  - Driver: `org.h2.Driver`
+  - `spring.jpa.hibernate.ddl-auto=update`
+  - `spring.flyway.enabled=false` (Flyway migrations are designed for a real Oracle database).
 
 ---
 

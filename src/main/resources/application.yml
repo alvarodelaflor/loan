@@ -1,6 +1,12 @@
 spring:
   application:
     name: loan-api
+
+---
+spring:
+  config:
+    activate:
+      on-profile: oracle,default
   datasource:
     url: 'jdbc:oracle:thin:@//localhost:1521/FREEPDB1'
     username: '${DB_USER:app_user}'
@@ -11,7 +17,24 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-  springdoc:
-    swagger-ui:
-      path=/openapi-spec:
-        yaml:
+
+---
+spring:
+  config:
+    activate:
+      on-profile: h2-oracle
+  datasource:
+    url: 'jdbc:h2:./data/loan-db;MODE=Oracle;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER=TRUE'
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+  jpa:
+    hibernate:
+      ddl-auto: update
+  flyway:
+    enabled: false
+
+springdoc:
+  swagger-ui:
+    path: /openapi-spec
+    yaml: true
