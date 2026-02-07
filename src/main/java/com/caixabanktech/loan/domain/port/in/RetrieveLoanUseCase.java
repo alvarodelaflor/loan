@@ -12,4 +12,5 @@ public interface RetrieveLoanUseCase {
     List<LoanApplication> getLoanHistory(UUID id);
     List<LoanApplication> getLoansByIdentity(ApplicantIdentity identity);
     List<LoanApplication> searchLoans(String identity, Instant startDate, Instant endDate);
+    void deleteLoan(UUID id);
 }

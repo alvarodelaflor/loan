@@ -78,4 +78,9 @@ public class LoanPersistenceAdapter implements LoanRepositoryPort {
                 .map(mapper::toDomain)
                 .collect(Collectors.collectingAndThen(Collectors.toList(), Optional::of));
     }
+
+    @Override
+    public void deleteById(LoanId id) {
+        jpaRepository.deleteById(id.value());
+    }
 }

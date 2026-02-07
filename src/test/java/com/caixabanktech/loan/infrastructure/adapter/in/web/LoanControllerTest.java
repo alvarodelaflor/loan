@@ -234,4 +234,13 @@ class LoanControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value(LoanStatus.PENDING.name()));
     }
+
+    @Test
+    @DisplayName("DELETE /api/v1/loans/{id} should return 204")
+    void shouldDeleteLoan() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(MockMvcRequestBuilders.delete(PATH + "/" + id))
+                .andExpect(status().isNoContent());
+    }
 }

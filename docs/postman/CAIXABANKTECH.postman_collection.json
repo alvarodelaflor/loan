@@ -377,6 +377,26 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "DELETE Loan",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{caixabanktech-url}}/api/v1/loans/{{id}}",
+          "host": [
+            "{{caixabanktech-url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "loans",
+            "{{id}}"
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }

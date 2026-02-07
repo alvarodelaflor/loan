@@ -99,4 +99,9 @@ public class LoanApplicationService implements CreateLoanUseCase, ModifyLoanStat
     private ResourceNotFoundException buildCriteriaMessage(String identity, Instant startDate, Instant endDate) {
         return new ResourceNotFoundException("No loans found matching criteria: identity=" + identity + ", startDate=" + startDate + ", endDate=" + endDate);
     }
+
+    @Override
+    public void deleteLoan(UUID id) {
+        loanRepository.deleteById(new LoanId(id));
+    }
 }

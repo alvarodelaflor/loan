@@ -28,6 +28,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -350,5 +351,18 @@ class LoanServiceTest {
                 .createdAt(Instant.now())
                 .modifiedAt(Instant.now())
                 .status(status);
+    }
+
+    @Test
+    @DisplayName("deleteLoan should delegate to repository deleteById")
+    void deleteLoanDelegatesToRepository() {
+        LoanRepositoryPort repository = mock(LoanRepositoryPort.class);
+        LoanApplicationService service = new LoanApplicationService(repository);
+
+        UUID id = UUID.randomUUID();
+
+        service.deleteLoan(id);
+
+        verify(repository).deleteById(new LoanId(id));
     }
 }

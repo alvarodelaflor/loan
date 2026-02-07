@@ -145,4 +145,18 @@ public class LoanController {
         var results = retrieveUseCase.searchLoans(applicantIdentity, startDate, endDate);
         return ResponseEntity.ok(loanRestMapper.toResponseList(results));
     }
+
+    @Operation(summary = "Delete loan application", description = "Deletes a loan application by its UUID.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Loan successfully deleted"),
+            @ApiResponse(responseCode = "404", description = "Loan application not found",
+                    content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @Parameter(description = "The unique UUID of the loan")
+            @PathVariable UUID id) {
+        retrieveUseCase.deleteLoan(id);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -199,6 +199,21 @@ class LoanPersistenceAdapterTest {
         verify(mapper).toDomain(e);
     }
 
+    @Test
+    @DisplayName("deleteById should delegate to repository")
+    void deleteByIdDelegatesToRepository() {
+        LoanJpaRepository jpaRepo = mock(LoanJpaRepository.class);
+        EntityManager em = mock(EntityManager.class);
+        LoanPersistenceMapper mapper = mock(LoanPersistenceMapper.class);
+        LoanPersistenceAdapter adapter = new LoanPersistenceAdapter(jpaRepo, em, mapper);
+
+        LoanId id = new LoanId(UUID.randomUUID());
+
+        adapter.deleteById(id);
+
+        verify(jpaRepo).deleteById(id.value());
+    }
+
     private LoanApplication sampleDomain(LoanStatus status) {
         return LoanApplication.builder()
                 .id(new LoanId(UUID.randomUUID()))
