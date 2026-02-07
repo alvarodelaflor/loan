@@ -79,9 +79,8 @@ Notes:
 
 - **Base URL (local)**: `http://localhost:8080/api/v1/loans`
 - **Base URL (prod)**: `http://ssh.alvarodelaflor.com:8080/api/v1/loans`
-- **Swagger UI (local)**: http://localhost:8080/swagger-ui.html
-- **Swagger UI (prod)**: http://ssh.alvarodelaflor.com:8080/swagger-ui.html
-- **OpenAPI UI (local)**: http://localhost:8080/swagger-ui/index.html
+- **Swagger UI (local)**: http://localhost:8080/swagger-ui/index.html#/
+- **Swagger UI (prod)**: http://ssh.alvarodelaflor.com:8080/swagger-ui/index.html#/
 
 ### Main endpoints
 - `POST /api/v1/loans` — create a loan application (initial status `PENDING`)
