@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Component
+@Component("loanPersistenceAdapter")
 public class LoanPersistenceAdapter implements LoanRepositoryPort {
 
     private final LoanJpaRepository jpaRepository;

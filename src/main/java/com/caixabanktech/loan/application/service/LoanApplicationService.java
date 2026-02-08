@@ -114,6 +114,6 @@ public class LoanApplicationService implements CreateLoanUseCase, ModifyLoanStat
 
     @Override
     public void deleteLoan(UUID id) {
-        loanRepository.deleteById(new LoanId(id));
+        loanRepository.deleteById(getLoanOrThrow(id).getId());
     }
 }

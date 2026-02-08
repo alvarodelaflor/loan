@@ -4,11 +4,13 @@ import com.caixabanktech.loan.domain.exception.InvalidStateTransitionException;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
 
 @Getter
 @Builder
+@Jacksonized
 public class LoanApplication {
     @NonNull
     private final LoanId id;

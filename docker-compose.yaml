@@ -17,6 +17,12 @@ services:
       retries: 10
       start_period: 30s
 
+  redis:
+    image: redis:7-alpine
+    container_name: loan-redis
+    ports:
+      - "6379:6379"
+
   app:
     build: .
     container_name: loan-api
@@ -27,11 +33,15 @@ services:
       - DB_USER=app_user
       - DB_PASSWORD=Welcome-12345
       - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@//oracle:1521/FREEPDB1
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8081
 
     depends_on:
       oracle:
         condition: service_healthy
+      redis:
+        condition: service_started
 
 volumes:
     oracle_data_v2:

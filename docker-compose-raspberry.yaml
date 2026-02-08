@@ -1,4 +1,10 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: loan-redis
+    ports:
+      - "6379:6379"
+
   app:
     build: .
     container_name: loan-api-h2
@@ -7,6 +13,10 @@ services:
       - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=h2-oracle
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8081
+    depends_on:
+      - redis
 
 volumes: {}

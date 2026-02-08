@@ -1,6 +1,6 @@
 # Loan Management System (Loan API)
 
-A REST API to manage the end-to-end lifecycle of personal loan applications (creation, retrieval, status transitions, searching and auditing). The project follows **Hexagonal Architecture (Ports & Adapters / Clean Architecture)** on **Spring Boot 3 / Java 21**, using **Oracle** as the database and **Hibernate Envers** for full auditability.
+A REST API to manage the end-to-end lifecycle of personal loan applications (creation, retrieval, status transitions, searching and auditing). The project follows **Hexagonal Architecture (Ports & Adapters / Clean Architecture)** on **Spring Boot 3 / Java 21**, using **Oracle** as the database, **Redis** as a distributed cache, and **Hibernate Envers** for full auditability.
 
 The API is also deployed on a personal server and can be accessed at:
 - **Base URL (prod)**: `http://ssh.alvarodelaflor.com:8080`
@@ -15,7 +15,7 @@ When using Postman:
 
 ## Quick start
 - **100% test coverage achieved**
-- Start everything (Oracle + API): `docker compose up --build`
+- Start everything (Oracle + Redis + API): `docker-compose up --build`
 - Swagger UI (local): http://localhost:8080/swagger-ui/index.html#/
 - Swagger UI (prod): http://ssh.alvarodelaflor.com:8080/swagger-ui/index.html#/
 - Postman collection to run the full flow end-to-end: `docs/postman/CAIXABANKTECH.postman_collection.json`
@@ -34,18 +34,19 @@ When using Postman:
 ### Docker (recommended)
 
 #### Oracle + API (main environment)
-Start Oracle (container) and the API:
+Start Oracle (container), Redis (container) and the API:
 
 - Normal start:
-  - `docker compose -f docker-compose.yaml up --build`
+  - `docker-compose -f docker-compose.yaml up --build`
 
 - Clean start (removes previous DB volume/state):
-  - `docker compose -f docker-compose.yaml down -v --remove-orphans && docker compose -f docker-compose.yaml up --build`
+  - `docker-compose -f docker-compose.yaml down -v --remove-orphans && docker-compose -f docker-compose.yaml up --build`
 
 Notes:
 - First boot can take ~1–2 minutes while Oracle initializes and Flyway runs migrations.
 - `docker-compose.yaml` exposes:
   - API on **8080**
+  - Redis on **6379**
   - Java debug port on **8081**
 
 #### Raspberry Pi / lightweight environment (H2 in Oracle compatibility mode)
@@ -63,7 +64,7 @@ To run the same API on a Raspberry Pi (or any low-resource environment) without 
 How to start on a Raspberry Pi (or any host with Docker):
 
 - Normal start:
-  - `docker compose -f docker-compose-raspberry.yaml up --build`
+  - `docker-compose -f docker-compose-raspberry.yaml up --build`
 
 Notes:
 - No external database container is started: H2 runs embedded inside the API container.
@@ -149,8 +150,12 @@ This project is designed following **Hexagonal Architecture (Ports & Adapters / 
 
 - **Infrastructure layer (`infrastructure/adapter/`)**
   - Provides concrete adapters for the external world:
-    - **Input adapters** (e.g. REST controllers under `adapter/input/rest`): map HTTP requests to inbound ports and map domain objects back to DTOs.
-    - **Output adapters** (e.g. JPA repositories under `adapter/output/persistence/jpa`): implement outbound ports using Spring Data JPA and the chosen database.
+    - **Persistence Adapter (`output.persistence`)**: Implementation using Spring Data JPA and Hibernate Envers for Oracle.
+    - **Cache Adapter (`output.persistence.jpa.CachingLoanRepositoryAdapter`)**: Implements a caching strategy using **Redis**. It acts as a Decorator for the main Persistence Adapter to provide:
+      - **Read-through**: Search in Redis before hitting the database.
+      - **Write-through/Invalidation**: Automatic cache update/eviction on `save` and `delete` operations.
+      - **Resilience**: Fallback to database if Redis is unavailable.
+    - **Input Adapters (`input.rest`)**: REST controllers using Spring Web.
   - Uses **MapStruct** to map between DTOs, domain models, and JPA entities, avoiding manual mapping.
   - This layer is where frameworks and technical details live (Spring MVC, JPA, Envers, Flyway, Docker, etc.), keeping the domain pure.
 
@@ -214,10 +219,6 @@ These are directions the project could evolve while still fitting the existing h
 - **Observability**
   - Add Micrometer + Prometheus to collect metrics for key use cases (requests per endpoint, loan creations per status, error rates, latency, etc.).
   - Integrate with a dashboard (Grafana) to monitor system health and usage patterns over time.
-
-- **Caching**
-  - Use Redis or a similar cache for read-heavy operations (e.g. `getLoan`, `getLoansByIdentity`, search endpoints).
-  - Implement caching in the application or persistence adapter layer without leaking it into the domain.
 
 - **Asynchronous processing and events**
   - Publish domain events (e.g. `LoanApproved`, `LoanRejected`, `LoanCancelled`) to a message broker like Kafka.

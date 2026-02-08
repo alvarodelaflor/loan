@@ -367,13 +367,23 @@ class LoanServiceTest {
     @Test
     @DisplayName("deleteLoan should delegate to repository deleteById")
     void deleteLoanDelegatesToRepository() {
-        LoanRepositoryPort repository = mock(LoanRepositoryPort.class);
-        LoanApplicationService service = new LoanApplicationService(repository);
+        var loan = createLoanApplication(LoanStatus.PENDING).build();
+        var loanId = loan.getId();
+        when(repositoryPort.findById(loanId)).thenReturn(Optional.of(loan));
 
-        UUID id = UUID.randomUUID();
+        loanApplicationService.deleteLoan(loanId.value());
 
-        service.deleteLoan(id);
+        verify(repositoryPort).deleteById(loanId);
+    }
 
-        verify(repository).deleteById(new LoanId(id));
+    @Test
+    @DisplayName("deleteLoan throws ResourceNotFoundException when loan does not exist")
+    void deleteLoanThrowsWhenNotFound() {
+        var loanId = new LoanId(UUID.randomUUID());
+        when(repositoryPort.findById(loanId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> loanApplicationService.deleteLoan(loanId.value()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Loan not found");
     }
 }
