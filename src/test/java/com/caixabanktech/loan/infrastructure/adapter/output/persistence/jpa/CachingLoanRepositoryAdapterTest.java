@@ -118,9 +118,10 @@ class CachingLoanRepositoryAdapterTest {
     }
 
     @Test
-    @DisplayName("save should call delegate, update individual cache and evict identity cache")
+    @DisplayName("save should call delegate, update individual cache and evict identity and history caches")
     void shouldCallDelegateAndUpdateCache() {
         String identityKey = "loan:identity:" + loanApplication.getApplicantIdentity().value();
+        String historyKey = "loan:history:" + loanApplication.getId().value();
         when(delegate.save(loanApplication)).thenReturn(loanApplication);
 
         LoanApplication result = cachingAdapter.save(loanApplication);
@@ -129,6 +130,7 @@ class CachingLoanRepositoryAdapterTest {
         verify(delegate).save(loanApplication);
         verify(valueOperations).set(cacheKey, loanApplication, 10, TimeUnit.MINUTES);
         verify(redisTemplate).delete(identityKey);
+        verify(redisTemplate).delete(historyKey);
     }
 
     @Test
@@ -148,12 +150,14 @@ class CachingLoanRepositoryAdapterTest {
     void shouldCallDelegateAndEvictFromCache() {
         when(valueOperations.get(cacheKey)).thenReturn(loanApplication);
         String identityKey = "loan:identity:" + loanApplication.getApplicantIdentity().value();
+        String historyKey = "loan:history:" + loanApplication.getId().value();
 
         cachingAdapter.deleteById(loanId);
 
         verify(delegate).deleteById(loanId);
         verify(redisTemplate).delete(cacheKey);
         verify(redisTemplate).delete(identityKey);
+        verify(redisTemplate).delete(historyKey);
     }
 
     @Test
@@ -244,13 +248,82 @@ class CachingLoanRepositoryAdapterTest {
     }
 
     @Test
+    @DisplayName("findHistory should return from cache on cache hit")
+    void shouldReturnFromHistoryCacheOnHit() {
+        String historyKey = "loan:history:" + loanId.value();
+        List<LoanApplication> history = List.of(loanApplication);
+        when(valueOperations.get(historyKey)).thenReturn(history);
+
+        Optional<List<LoanApplication>> result = cachingAdapter.findHistory(loanId);
+
+        assertThat(result).isPresent().contains(history);
+        verify(delegate, never()).findHistory(any());
+    }
+
+    @Test
+    @DisplayName("findHistory should fetch from delegate and cache on miss")
+    void shouldFetchFromDelegateAndCacheHistoryOnMiss() {
+        String historyKey = "loan:history:" + loanId.value();
+        List<LoanApplication> history = List.of(loanApplication);
+        when(valueOperations.get(historyKey)).thenReturn(null);
+        when(delegate.findHistory(loanId)).thenReturn(Optional.of(history));
+
+        Optional<List<LoanApplication>> result = cachingAdapter.findHistory(loanId);
+
+        assertThat(result).isPresent().contains(history);
+        verify(delegate).findHistory(loanId);
+        verify(valueOperations).set(historyKey, history, 10, TimeUnit.MINUTES);
+    }
+
+    @Test
+    @DisplayName("findHistory should return empty and not cache when not found in delegate")
+    void shouldReturnEmptyAndNotCacheWhenNotFoundInDelegateForHistory() {
+        String historyKey = "loan:history:" + loanId.value();
+        when(valueOperations.get(historyKey)).thenReturn(null);
+        when(delegate.findHistory(loanId)).thenReturn(Optional.empty());
+
+        Optional<List<LoanApplication>> result = cachingAdapter.findHistory(loanId);
+
+        assertThat(result).isNotPresent();
+        verify(delegate).findHistory(loanId);
+        verify(valueOperations, never()).set(anyString(), any(), anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("findHistory should fallback to delegate on Redis read error")
+    void shouldFallbackToDelegateOnRedisReadErrorForHistory() {
+        String historyKey = "loan:history:" + loanId.value();
+        List<LoanApplication> history = List.of(loanApplication);
+        when(valueOperations.get(historyKey)).thenThrow(new RuntimeException("Redis down"));
+        when(delegate.findHistory(loanId)).thenReturn(Optional.of(history));
+
+        Optional<List<LoanApplication>> result = cachingAdapter.findHistory(loanId);
+
+        assertThat(result).isPresent().contains(history);
+        verify(delegate).findHistory(loanId);
+    }
+
+    @Test
+    @DisplayName("findHistory should not fail on Redis write error")
+    void shouldNotFailOnRedisWriteErrorForHistory() {
+        String historyKey = "loan:history:" + loanId.value();
+        List<LoanApplication> history = List.of(loanApplication);
+        when(valueOperations.get(historyKey)).thenReturn(null);
+        when(delegate.findHistory(loanId)).thenReturn(Optional.of(history));
+        doThrow(new RuntimeException("Redis down")).when(valueOperations).set(historyKey, history, 10, TimeUnit.MINUTES);
+
+        Optional<List<LoanApplication>> result = cachingAdapter.findHistory(loanId);
+
+        assertThat(result).isPresent().contains(history);
+        verify(delegate).findHistory(loanId);
+    }
+
+    @Test
     @DisplayName("Delegated methods should call delegate")
     void shouldCallDelegateForOtherMethods() {
         cachingAdapter.findAll();
         verify(delegate).findAll();
 
-        cachingAdapter.findHistory(loanId);
-        verify(delegate).findHistory(loanId);
 
         cachingAdapter.findByCriteria(null, null, null);
         verify(delegate).findByCriteria(null, null, null);

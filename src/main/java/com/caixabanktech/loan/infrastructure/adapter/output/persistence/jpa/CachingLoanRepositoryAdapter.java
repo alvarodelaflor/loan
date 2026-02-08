@@ -39,6 +39,10 @@ public class CachingLoanRepositoryAdapter implements LoanRepositoryPort {
         return "loan:identity:" + identity;
     }
 
+    private String getHistoryCacheKey(LoanId id) {
+        return "loan:history:" + id.value();
+    }
+
     @Override
     public Optional<LoanApplication> findById(LoanId id) {
         String key = getCacheKey(id);
@@ -75,6 +79,9 @@ public class CachingLoanRepositoryAdapter implements LoanRepositoryPort {
             // Invalidate identity list cache to ensure consistency
             String identityKey = getIdentityCacheKey(savedLoan.getApplicantIdentity().value());
             redisTemplate.delete(identityKey);
+
+            // Invalidate history cache
+            redisTemplate.delete(getHistoryCacheKey(savedLoan.getId()));
         } catch (Exception e) {
             log.warn("Error updating cache for loan {}.", savedLoan.getId().value(), e);
         }
@@ -87,6 +94,7 @@ public class CachingLoanRepositoryAdapter implements LoanRepositoryPort {
         delegate.deleteById(id);
         try {
             redisTemplate.delete(getCacheKey(id));
+            redisTemplate.delete(getHistoryCacheKey(id));
             loan.ifPresent(l -> redisTemplate.delete(getIdentityCacheKey(l.getApplicantIdentity().value())));
         } catch (Exception e) {
             log.warn("Error deleting from cache for key {}.", getCacheKey(id), e);
@@ -99,8 +107,29 @@ public class CachingLoanRepositoryAdapter implements LoanRepositoryPort {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Optional<List<LoanApplication>> findHistory(LoanId id) {
-        return delegate.findHistory(id);
+        String key = getHistoryCacheKey(id);
+        try {
+            Object cached = redisTemplate.opsForValue().get(key);
+            if (cached instanceof List) {
+                log.info("Cache hit for history: {}", id.value());
+                return Optional.of((List<LoanApplication>) cached);
+            }
+            log.info("Cache miss for history: {}", id.value());
+        } catch (Exception e) {
+            log.warn("Error reading history from Redis cache for loan {}. Proceeding to database.", id.value(), e);
+        }
+
+        Optional<List<LoanApplication>> results = delegate.findHistory(id);
+        results.ifPresent(list -> {
+            try {
+                redisTemplate.opsForValue().set(key, list, CACHE_TTL, CACHE_TTLUNIT);
+            } catch (Exception e) {
+                log.warn("Error writing history to Redis cache for loan {}.", id.value(), e);
+            }
+        });
+        return results;
     }
 
     @Override
