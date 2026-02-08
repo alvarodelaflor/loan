@@ -162,7 +162,7 @@ public class LoanController {
     @GetMapping("/search/{applicantIdentity}")
     public ResponseEntity<List<LoanResponse>> searchByIdentity(
             @Parameter(example = "12345678Z", description = "Spanish National Identity Document (DNI or NIE)")
-            @PathVariable ApplicantIdentity applicantIdentity) {
+            @PathVariable String applicantIdentity) {
         var loans = retrieveUseCase.getLoansByIdentity(applicantIdentity);
         return ResponseEntity.ok(loanRestMapper.toResponseList(loans));
     }

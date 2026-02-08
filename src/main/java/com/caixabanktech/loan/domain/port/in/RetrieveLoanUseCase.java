@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface RetrieveLoanUseCase {
     LoanApplication getLoan(UUID id);
     List<LoanApplication> getLoanHistory(UUID id);
-    List<LoanApplication> getLoansByIdentity(ApplicantIdentity identity);
+    List<LoanApplication> getLoansByIdentity(String identity);
     List<LoanApplication> searchLoans(String identity, Instant startDate, Instant endDate);
     void deleteLoan(UUID id);
 }

@@ -209,14 +209,14 @@ class LoanControllerTest {
     @Test
     @DisplayName("GET /api/v1/loans/search/{identity} should return list 200")
     void shouldSearchByIdentity() throws Exception {
-        ApplicantIdentity identity = new ApplicantIdentity("12345678Z");
+        String identity = "12345678Z";
         List<LoanApplication> loans = List.of(sampleLoan(LoanStatus.PENDING));
         when(retrieveUseCase.getLoansByIdentity(identity)).thenReturn(loans);
         when(loanRestMapper.toResponseList(loans)).thenReturn(loans.stream().map(this::sampleResponse).toList());
 
-        mockMvc.perform(MockMvcRequestBuilders.get(APPLICATION_PATH.formatted(identity.value())))
+        mockMvc.perform(MockMvcRequestBuilders.get(APPLICATION_PATH.formatted(identity)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].applicantIdentity").value(identity.value()));
+                .andExpect(jsonPath("$[0].applicantIdentity").value(identity));
     }
 
     @Test

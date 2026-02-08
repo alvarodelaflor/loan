@@ -10,7 +10,6 @@ When using Postman:
 - Use **environment `CAIXABANKTECH-LOCAL`** for running the API locally (Docker or direct Spring Boot).
 
 ## Demo
-
 ![Demo](docs/media/demo.gif)
 
 ## Quick start
@@ -20,7 +19,9 @@ When using Postman:
 - Swagger UI (prod): http://caixabank.alvarodelaflor.com:8080/swagger-ui/index.html#/
 - Postman collection to run the full flow end-to-end: `docs/postman/CAIXABANKTECH.postman_collection.json`
 
-![Swagger](docs/media/swagger.jpeg)
+| Endpoints definitions                   | Creante loan                            |
+|-----------------------------------------|-----------------------------------------|
+| ![Swagger_1](docs/media/swagger_1.jpeg) | ![Swagger_2](docs/media/swagger_2.jpeg) |
 > **Disclaimer**: depending on the browser and security settings, requests to non-HTTPS URLs (like `http://localhost:8080` or `http://caixabank.alvarodelaflor.com:8080`) may be blocked for embedded content such as Swagger UI. If Swagger does not load correctly, try using a different browser, adjusting mixed-content settings, or accessing the API directly via Postman/cURL.
 
 ---

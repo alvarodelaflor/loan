@@ -85,8 +85,8 @@ public class LoanApplicationService implements CreateLoanUseCase, ModifyLoanStat
 
     @Override
     @Transactional(readOnly = true)
-    public List<LoanApplication> getLoansByIdentity(ApplicantIdentity applicantIdentity) {
-        List<LoanApplication> results = loanRepository.findByApplicantIdentity(applicantIdentity)
+    public List<LoanApplication> getLoansByIdentity(String applicantIdentity) {
+        List<LoanApplication> results = loanRepository.findByApplicantIdentity(new ApplicantIdentity(applicantIdentity))
                 .orElseThrow(() -> buildCriteriaMessage(applicantIdentity));
         if (results.isEmpty()) {
             throw buildCriteriaMessage(applicantIdentity);
@@ -94,8 +94,8 @@ public class LoanApplicationService implements CreateLoanUseCase, ModifyLoanStat
         return results;
     }
 
-    private ResourceNotFoundException buildCriteriaMessage(ApplicantIdentity applicantIdentity) {
-        return new ResourceNotFoundException("No loans found for applicant identity: " + applicantIdentity.value());
+    private ResourceNotFoundException buildCriteriaMessage(String applicantIdentity) {
+        return new ResourceNotFoundException("No loans found for applicant identity: " + applicantIdentity);
     }
 
     @Override

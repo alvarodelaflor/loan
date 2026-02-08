@@ -229,7 +229,7 @@ class LoanServiceTest {
         List<LoanApplication> loans = List.of(createLoanApplication(LoanStatus.PENDING).build());
         when(repositoryPort.findByApplicantIdentity(identity)).thenReturn(java.util.Optional.of(loans));
 
-        List<LoanApplication> result = loanApplicationService.getLoansByIdentity(identity);
+        List<LoanApplication> result = loanApplicationService.getLoansByIdentity(identity.value());
         assertThat(result).hasSize(1).containsAll(loans);
     }
 
@@ -239,7 +239,7 @@ class LoanServiceTest {
         ApplicantIdentity identity = new ApplicantIdentity("12345678Z");
         when(repositoryPort.findByApplicantIdentity(identity)).thenReturn(java.util.Optional.empty());
 
-        assertThatThrownBy(() -> loanApplicationService.getLoansByIdentity(identity))
+        assertThatThrownBy(() -> loanApplicationService.getLoansByIdentity(identity.value()))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("No loans found for applicant identity");
     }
@@ -250,7 +250,7 @@ class LoanServiceTest {
         ApplicantIdentity identity = new ApplicantIdentity("12345678Z");
         when(repositoryPort.findByApplicantIdentity(identity)).thenReturn(Optional.of(List.of()));
 
-        assertThatThrownBy(() -> loanApplicationService.getLoansByIdentity(identity))
+        assertThatThrownBy(() -> loanApplicationService.getLoansByIdentity(identity.value()))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("No loans found for applicant identity");
     }
