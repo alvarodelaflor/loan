@@ -8,11 +8,13 @@ import com.caixabanktech.loan.domain.port.in.RetrieveLoanUseCase;
 import com.caixabanktech.loan.infrastructure.adapter.input.rest.dto.CreateLoanRequest;
 import com.caixabanktech.loan.infrastructure.adapter.input.rest.dto.LoanResponse;
 import com.caixabanktech.loan.infrastructure.adapter.input.rest.dto.StatusUpdateRequest;
+import com.caixabanktech.loan.infrastructure.adapter.input.rest.error.ApiErrorResponse;
 import com.caixabanktech.loan.infrastructure.adapter.output.persistence.mapper.LoanRestMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -20,7 +22,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,9 +57,17 @@ public class LoanController {
             @ApiResponse(responseCode = "201", description = "Loan application successfully created",
                     content = @Content(schema = @Schema(implementation = LoanResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid input data (e.g., checksum error in NIF, negative amount)",
-                    content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(name = "Business Rule Violation", value = "{\"title\": \"Business Rule Violation\", \"status\": 400, \"detail\": \"The loan amount must be positive\", \"timestamp\": \"2026-02-08T10:00:00\", \"validationErrors\": null}"),
+                                    @ExampleObject(name = "Validation Failed", value = "{\"title\": \"Validation Failed\", \"status\": 400, \"detail\": \"The provided data is invalid\", \"timestamp\": \"2026-02-08T10:00:00\", \"validationErrors\": {\"applicantName\": \"must not be null\"}}")
+                            })),
             @ApiResponse(responseCode = "500", description = "Internal system failure",
-                    content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "Internal Error",
+                                    value = "{\"title\": \"Internal Server Error\", \"status\": 500, \"detail\": \"An unexpected error occurred\", \"timestamp\": \"2026-02-08T12:00:00\", \"validationErrors\": null}"
+                            )))
     })
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<LoanResponse> create(@RequestBody @Valid CreateLoanRequest request) {
@@ -76,7 +85,11 @@ public class LoanController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Application found"),
             @ApiResponse(responseCode = "404", description = "Loan application not found",
-                    content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Resource Not Found", value = "{\"title\": \"Resource Not Found\", \"status\": 404, \"detail\": \"Loan not found: ace4f45a-a3c5-4eea-96e8-2d4908b919f4\", \"timestamp\": \"2026-02-08T10:00:00\", \"validationErrors\": null}"))),
+            @ApiResponse(responseCode = "500", description = "Internal system failure",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Internal Error", value = "{\"title\": \"Internal Server Error\", \"status\": 500, \"detail\": \"An unexpected error occurred\", \"timestamp\": \"2026-02-08T12:00:00\", \"validationErrors\": null}")))
     })
     @GetMapping("/{id}")
     public ResponseEntity<LoanResponse> get(
@@ -86,8 +99,16 @@ public class LoanController {
     }
 
     @Operation(summary = "Consult audit history", description = "Returns a complete chronological list of all state changes for the application (powered by Hibernate Envers).")
-    @ApiResponse(responseCode = "200", description = "Historical data retrieved",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = LoanResponse.class))))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Historical data retrieved",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = LoanResponse.class)))),
+            @ApiResponse(responseCode = "404", description = "Loan application not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Resource Not Found", value = "{\"title\": \"Resource Not Found\", \"status\": 404, \"detail\": \"Loan not found: ace4f45a-a3c5-4eea-96e8-2d4908b919f4\", \"timestamp\": \"2026-02-08T10:00:00\", \"validationErrors\": null}"))),
+            @ApiResponse(responseCode = "500", description = "Internal system failure",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Internal Error", value = "{\"title\": \"Internal Server Error\", \"status\": 500, \"detail\": \"An unexpected error occurred\", \"timestamp\": \"2026-02-08T12:00:00\", \"validationErrors\": null}")))
+    })
     @GetMapping("/{id}/history")
     public ResponseEntity<List<LoanResponse>> getHistory(
             @Parameter(description = "The unique UUID of the loan", example = "c18b4e1b-6b10-4d6c-9476-5e4764facb30")
@@ -103,8 +124,14 @@ public class LoanController {
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Status successfully updated"),
             @ApiResponse(responseCode = "400", description = "Illegal state transition or unknown status value",
-                    content = @Content(schema = @Schema(implementation = ProblemDetail.class))),
-            @ApiResponse(responseCode = "404", description = "Loan application not found")
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Invalid Transition", value = "{\"title\": \"Business Rule Violation\", \"status\": 400, \"detail\": \"Only PENDING -> APPROVED\", \"timestamp\": \"2026-02-08T10:00:00\", \"validationErrors\": null}"))),
+            @ApiResponse(responseCode = "404", description = "Loan application not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Resource Not Found", value = "{\"title\": \"Resource Not Found\", \"status\": 404, \"detail\": \"Loan not found: ace4f45a-a3c5-4eea-96e8-2d4908b919f4\", \"timestamp\": \"2026-02-08T10:00:00\", \"validationErrors\": null}"))),
+            @ApiResponse(responseCode = "500", description = "Internal system failure",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Internal Error", value = "{\"title\": \"Internal Server Error\", \"status\": 500, \"detail\": \"An unexpected error occurred\", \"timestamp\": \"2026-02-08T12:00:00\", \"validationErrors\": null}")))
     })
     @PatchMapping("/{id}/status")
     public ResponseEntity<Void> updateStatus(
@@ -123,7 +150,15 @@ public class LoanController {
     }
 
     @Operation(summary = "Search loans by applicant", description = "Retrieves all loan applications associated with a specific DNI/NIE.")
-    @ApiResponse(responseCode = "200", description = "Search completed")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Search completed"),
+            @ApiResponse(responseCode = "404", description = "No loans found for the given identity",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Resource Not Found", value = "{\"title\": \"Resource Not Found\", \"status\": 404, \"detail\": \"No loans found for applicant identity: 12345678Z\", \"timestamp\": \"2026-02-08T10:00:00\", \"validationErrors\": null}"))),
+            @ApiResponse(responseCode = "500", description = "Internal system failure",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Internal Error", value = "{\"title\": \"Internal Server Error\", \"status\": 500, \"detail\": \"An unexpected error occurred\", \"timestamp\": \"2026-02-08T12:00:00\", \"validationErrors\": null}")))
+    })
     @GetMapping("/search/{applicantIdentity}")
     public ResponseEntity<List<LoanResponse>> searchByIdentity(
             @Parameter(example = "12345678Z", description = "Spanish National Identity Document (DNI or NIE)")
@@ -133,6 +168,15 @@ public class LoanController {
     }
 
     @Operation(summary = "Search loans with filters", description = "Filters by DNI/NIE and/or creation date range")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Search completed"),
+            @ApiResponse(responseCode = "404", description = "No loans found for the provided criteria",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Resource Not Found", value = "{\"title\": \"Resource Not Found\", \"status\": 404, \"detail\": \"No loans found matching criteria: identity 12345678Z\", \"timestamp\": \"2026-02-08T10:00:00\", \"validationErrors\": null}"))),
+            @ApiResponse(responseCode = "500", description = "Internal system failure",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Internal Error", value = "{\"title\": \"Internal Server Error\", \"status\": 500, \"detail\": \"An unexpected error occurred\", \"timestamp\": \"2026-02-08T12:00:00\", \"validationErrors\": null}")))
+    })
     @GetMapping("/search/criteria")
     public ResponseEntity<List<LoanResponse>> search(
             @Parameter(example = "12345678Z", description = "Spanish National Identity Document (DNI or NIE)")
@@ -150,7 +194,11 @@ public class LoanController {
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Loan successfully deleted"),
             @ApiResponse(responseCode = "404", description = "Loan application not found",
-                    content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Resource Not Found", value = "{\"title\": \"Resource Not Found\", \"status\": 404, \"detail\": \"Loan not found: ace4f45a-a3c5-4eea-96e8-2d4908b919f4\", \"timestamp\": \"2026-02-08T10:00:00\", \"validationErrors\": null}"))),
+            @ApiResponse(responseCode = "500", description = "Internal system failure",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @ExampleObject(name = "Internal Error", value = "{\"title\": \"Internal Server Error\", \"status\": 500, \"detail\": \"An unexpected error occurred\", \"timestamp\": \"2026-02-08T12:00:00\", \"validationErrors\": null}")))
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
