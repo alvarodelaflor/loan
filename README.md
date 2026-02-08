@@ -3,7 +3,7 @@
 A REST API to manage the end-to-end lifecycle of personal loan applications (creation, retrieval, status transitions, searching and auditing). The project follows **Hexagonal Architecture (Ports & Adapters / Clean Architecture)** on **Spring Boot 3 / Java 21**, using **Oracle** as the database, **Redis** as a distributed cache, and **Hibernate Envers** for full auditability.
 
 The API is also deployed on a personal server and can be accessed at:
-- **Base URL (prod)**: `http://ssh.alvarodelaflor.com:8080`
+- **Base URL (prod)**: `http://caixabank.alvarodelaflor.com:8080`
 
 When using Postman:
 - Use **environment `CAIXABANKTECH-PROD`** (in `docs/postman/`) against the deployed server.
@@ -17,11 +17,11 @@ When using Postman:
 - **100% test coverage achieved**
 - Start everything (Oracle + Redis + API): `docker-compose up --build`
 - Swagger UI (local): http://localhost:8080/swagger-ui/index.html#/
-- Swagger UI (prod): http://ssh.alvarodelaflor.com:8080/swagger-ui/index.html#/
+- Swagger UI (prod): http://caixabank.alvarodelaflor.com:8080/swagger-ui/index.html#/
 - Postman collection to run the full flow end-to-end: `docs/postman/CAIXABANKTECH.postman_collection.json`
 
 ![Swagger](docs/media/swagger.jpeg)
-> **Disclaimer**: depending on the browser and security settings, requests to non-HTTPS URLs (like `http://localhost:8080` or `http://ssh.alvarodelaflor.com:8080`) may be blocked for embedded content such as Swagger UI. If Swagger does not load correctly, try using a different browser, adjusting mixed-content settings, or accessing the API directly via Postman/cURL.
+> **Disclaimer**: depending on the browser and security settings, requests to non-HTTPS URLs (like `http://localhost:8080` or `http://caixabank.alvarodelaflor.com:8080`) may be blocked for embedded content such as Swagger UI. If Swagger does not load correctly, try using a different browser, adjusting mixed-content settings, or accessing the API directly via Postman/cURL.
 
 ---
 
@@ -79,9 +79,9 @@ Notes:
 ## 2) API access & documentation
 
 - **Base URL (local)**: `http://localhost:8080/api/v1/loans`
-- **Base URL (prod)**: `http://ssh.alvarodelaflor.com:8080/api/v1/loans`
+- **Base URL (prod)**: `http://caixabank.alvarodelaflor.com:8080/api/v1/loans`
 - **Swagger UI (local)**: http://localhost:8080/swagger-ui/index.html#/
-- **Swagger UI (prod)**: http://ssh.alvarodelaflor.com:8080/swagger-ui/index.html#/
+- **Swagger UI (prod)**: http://caixabank.alvarodelaflor.com:8080/swagger-ui/index.html#/
 
 ### Main endpoints
 - `POST /api/v1/loans` — create a loan application (initial status `PENDING`)
@@ -122,8 +122,8 @@ The first request (**Create Loan**) includes a test script that automatically st
 1. Import the **collection** and the **environment** in Postman.
 2. Select:
    - `CAIXABANKTECH-LOCAL` to hit `http://localhost:8080`.
-   - `CAIXABANKTECH-PROD` to hit `http://ssh.alvarodelaflor.com:8080`.
-3. Ensure the `caixabanktech-url` variable matches the chosen environment (including scheme, e.g. `http://ssh.alvarodelaflor.com:8080`).
+   - `CAIXABANKTECH-PROD` to hit `http://caixabank.alvarodelaflor.com:8080`.
+3. Ensure the `caixabanktech-url` variable matches the chosen environment (including scheme, e.g. `http://caixabank.alvarodelaflor.com:8080`).
 4. Run the collection using the Postman **Runner** to execute all requests in order.
 
 ---
